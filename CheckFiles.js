@@ -1,18 +1,6 @@
-var mongoose      = require('mongoose');
-    mongoose.connect('mongodb://user:pass@ds031867.mongolab.com:31867/booksearch');
-var db            = mongoose.connection;
-var Schema        = mongoose.Schema;
-var child_process = require('child_process')
-var debug         = true
-
-var BookSchema = new Schema({
-  p : { type:String, trim:true },
-  m : { type:String, trim:true },
-  t : { type:String, trim:true },
-  i : { type:Boolean }
-})
-
-var Book = mongoose.model('Book',BookSchema)
+var db    = require('./Storage.js')
+var spawn = require('child_process').spawn
+var debug = true
 
 function dc(title,variable){
   if(!debug) return
@@ -20,37 +8,46 @@ function dc(title,variable){
   if(variable) console.log(variable)
 }
 
-function crawlBooks(path){
-  var ls = child_process.spawn('find',[path,'-name','*','-regex','.*\\.pdf'])
+function crawlBooks(location){
+  ls = spawn('find',[location,'-name','*','-regex','.*\\.pdf'])
   ls.stdout.on('data',function(data){
-    var fpaths  = data.toString().split('\n')
-    var fcount  = fpaths.length
-    var files   = []
-    dc('Files Found By Crawler',fpaths)
+    flocations  = data.toString().split('\n')
+    flocations.pop() // Remove Last Empty String
+    fcount  = flocations.length
+    dc('Files Found By Crawler',flocations)
     for(i=0;i<fcount;i++){
-      if(!fpaths[i]) continue
-      var md5 = child_process.spawn('md5sum',[fpaths[i]])
-      md5.stdout.on('data',function(data){
-        data = data.toString()
-        md5  = data.substring(0,32)
-        path = data.substring(35,data.length-1)
-        book = { 'p':path, 'm':md5, 't':'', i:false }
-        dc('Checking Book:',book)
-        checkIfModified(book)
-      })
+      checkNextBook(flocations[i])
     }
   })
 }
 
+function checkNextBook(location){
+  var title = /\/([^\/]*)\.pdf/g.exec(location)[1]
+  info = spawn('pdfinfo',[location])
+  info.stdout.on('data',function(data){
+    dc('Book Info',data.toString())
+    var pn  = /Pages:\s+(\d+)/g.exec(data.toString())[1]
+    md5 = spawn('md5sum',[location])
+    md5.stdout.on('data',function(data){
+      data = data.toString()
+      md5  = data.substring(0,32)
+      book = { 'l':location, 'm':md5, 't':title, 'p':pn, i:false }
+      dc('Checking Book:',book)
+      checkIfModified(book)
+    })
+  })
+}
+
 function checkIfModified(book){
-  dc('Checking If Book is Modified',book.p)
-  Book.findOne(
-    { 'p':book.p },
+  dc('Checking If Book is Modified',book.l)
+  db.Book.findOne(
+    { 'l':book.l },
     function(err,res){
       if(!res)
         checkIfMoved(book)
       else {
         dc('A book is already available at path')
+        dc('Compare MD5',[res.m,book.m])
         if(res.m!=book.m){
           dc('Book is Modified')
           res.i = false
@@ -58,7 +55,7 @@ function checkIfModified(book){
             if(err)
               dc('Save Error',err)
             else
-              dc('Book status updated to non-indexed')
+              dc('Book status updated to non-indexed',book)
           })
         }
         else {
@@ -70,17 +67,17 @@ function checkIfModified(book){
 }
 
 function checkIfMoved(book){
-  dc('Checking If Book is Moved',book.p)
-  Book.findOne(
+  dc('Checking If Book is Moved',book.l)
+  db.Book.findOne(
     { 'm':book.m },
     function(err,res){
       if(!res)
         addBook(book)
       else {
         dc('This book is already available')
-        if(res.p!=book.p){
+        if(res.l!=book.l){
           dc('Book is Moved')
-          res.p = book.p
+          res.l = book.l
           res.save(function(err){
             if(err)
               dc('Save Error',err)
@@ -95,7 +92,7 @@ function checkIfMoved(book){
 
 function addBook(book){
   dc('Adding New Book')
-  var book = new Book(book)
+  book = new db.Book(book)
   book.save(function(err){
     if(err)
       dc('Save Error',err)
@@ -104,6 +101,6 @@ function addBook(book){
   })
 }
 
-db.on('open',function(){
+db.link.on('open',function(){
   crawlBooks('./books')
 })
