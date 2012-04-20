@@ -1,6 +1,13 @@
 var mongoose = require('mongoose')
     mongoose.connect('mongodb://admin:password@host:port/database')
 var Schema   = mongoose.Schema
+var debug    = false
+
+function dc(title,variable){
+  if(!debug) return
+  console.log('\n#DEBUG:'+title)
+  if(variable) console.log(variable)
+}
 
 var BookSchema = new Schema({
   l : /* Location     */ { type:String, trim:true },
@@ -15,6 +22,22 @@ var WordSchema = new Schema({
   p : /* Page Number  */ { type:Number, min:1 },
 })
 
+exports.mngs = mongoose
 exports.link = mongoose.connection
 exports.Book = mongoose.model('Book',BookSchema)
 exports.Word = mongoose.model('Word',WordSchema)
+exports.iLft = 0
+
+exports.processAndExit = function(){
+  setInterval(
+    function(){
+      if(exports.iLft==0){
+        mongoose.connection.close()
+        mongoose.disconnect()
+        dc('Bye Bye')
+        process.exit(0)
+      }
+    },
+    1000
+  )
+}
