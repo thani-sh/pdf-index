@@ -14,6 +14,8 @@ function crawlBooks(location){
     flocations  = data.toString().split('\n')
     flocations.pop() // Remove Last Empty String
     fcount  = flocations.length
+    db.iLft = fcount
+    db.processAndExit()
     dc('Files Found By Crawler',flocations)
     for(i=0;i<fcount;i++){
       checkNextBook(flocations[i])
@@ -56,10 +58,12 @@ function checkIfModified(book){
               dc('Save Error',err)
             else
               dc('Book status updated to non-indexed',book)
+            db.iLft--
           })
         }
         else {
-          dc('Nothing to update')
+          dc('Book is up-to-date')
+          db.iLft--
         }
       }
     }
@@ -83,6 +87,7 @@ function checkIfMoved(book){
               dc('Save Error',err)
             else
               dc('Book path changed')
+            db.iLft--
           })
         }
       }
@@ -98,6 +103,7 @@ function addBook(book){
       dc('Save Error',err)
     else
       dc('New book added')
+    db.iLft--
   })
 }
 

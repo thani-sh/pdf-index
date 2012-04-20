@@ -1,7 +1,7 @@
 var mongoose = require('mongoose')
-    mongoose.connect('mongodb://admin:password@ds031867.mongolab.com:31867/booksearch')
-
+    mongoose.connect('mongodb://admin:password@host:port/database')
 var Schema   = mongoose.Schema
+
 var BookSchema = new Schema({
   l : /* Location     */ { type:String, trim:true },
   m : /* MD5 Hash     */ { type:String, trim:true },
