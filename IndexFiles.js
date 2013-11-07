@@ -2,12 +2,6 @@ var db    = require('./Storage.js')
 var spawn = require('child_process').spawn
 var debug = true
 
-function dc(title,variable){
-  if(!debug) return
-  console.log('\n#DEBUG:'+title)
-  if(variable) console.log(variable)
-}
-
 function isResultEmpty(obj) {
   if(obj===undefined || obj===null) return true
   if(obj.constructor == Array)
@@ -17,10 +11,10 @@ function isResultEmpty(obj) {
 
 function indexAllBooks(books){
   if(isResultEmpty(books)){
-    dc('Nothing to Index')
+    console.log('Nothing to Index')
   } else {
     bcount = books.length
-    dc('Found '+bcount+' Books to index',books)
+    console.log('Found '+bcount+' Books to index',books)
     for(i=0;i<bcount;i++){
       db.iLft+=books[i].p
       indexBook(books[i])
@@ -36,9 +30,9 @@ function indexBook(book){
   book.i = true
   book.save(function(err){
     if(err)
-      return dc('Error changing book index status',[err,book])
+      return console.log('Error changing book index status',[err,book])
     else
-      return dc('Index Status Updated')
+      return console.log('Index Status Updated')
   })
 
 }
@@ -49,7 +43,7 @@ function indexPage(book,pageNo){
     words    = data.toString().match(/[^.,:;\/'"“\\”?!\-—\n\f\t ]{2,}/g)
     wcount   = words.length
     db.iLft += wcount - 1
-    dc('Text File Contents',wcount+' words on page '+pageNo)
+    console.log('Text File Contents',wcount+' words on page '+pageNo)
     for(i=0;i<wcount;i++){
       addToIndex(book,pageNo,words[i])
     }
@@ -64,12 +58,12 @@ function addToIndex(book,pageNo,word){
         var mWord = new db.Word( { 'w':word, 'b':book._id, 'p':pageNo } )
         mWord.save(function(err){
           if(err)
-            return dc('Save Error',err)
-          dc('Added to index',mWord)
+            return console.log('Save Error',err)
+          console.log('Added to index',mWord)
           db.iLft--
         })
       } else {
-        dc('Already Indexed')
+        console.log('Already Indexed')
         db.iLft--
       }
     }
@@ -79,9 +73,9 @@ function addToIndex(book,pageNo,word){
 db.link.on('open',function(){
   db.Book.find( { i:false } ,function(err,res){
     if(err)
-      return dc('Cannot Find New Book')
+      return console.log('Cannot Find New Book')
     if(isResultEmpty(res)){
-      dc('No New books')
+      console.log('No New books')
     }
     indexAllBooks(res)
   })
