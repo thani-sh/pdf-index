@@ -1,10 +1,9 @@
 #PDF Indexer
 
-Automatically crawls and Indexes your eBooks for easy lookup. First run server.js, it will continuously monitor and index your pdf files. Use client.js to lookup words.
+> Status: POC
+> I wrote this project while following the "Introduction to Computer Science" program at Udacity 4 years ago.
 
-> This is only a proof-of-concept software so things can (and most probably will) break
-> Feel free to fork this project on github. Any complaints, bugs, ideas, comments, or
-> something else, just send me a message.
+Automatically crawls and Indexes your eBooks for easy lookup. First run server.js, it will continuously monitor and index your pdf files. Use client.js to lookup words.
 
 ##Requirements
 
